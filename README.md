@@ -1,2 +1,9 @@
-# Unity-Nested-Fade-Group
-A generic fade group system to mimic the standard Canvas Group alpha control functionality for other things, such as SpriteRenderer.
+# Nested Fade Group for Unity
+A generic fade group system to mimic the standard Canvas Group alpha control functionality for other things. Currently the only fade target is SpriteRenderer.
+
+## How do I add new fade targets?
+Create a new class that extends NestedFadeGroupBase, and remember to give it the [ExecuteInEditMode] attribute so that it can update live in edit mode.
+
+If your class is supposed to be a bridge to an existing class (such as with SpriteRenderer) then you can also add some logic to the AddMissingBridgeComponents method of the NestedFadeGroup class.
+
+Since classes like SpriteRenderer can't be extended I've had to do it this way, but someone knows of a cleaner way of accomplishing this then please, let me know!

@@ -9,6 +9,9 @@ namespace NestedFadeGroup
 		[Range(0, 1.0f)]
 		private float alpha = 1.0f;
 
+		/// <summary>
+		/// The alpha of this fade object, not multiplied with parents.
+		/// </summary>
 		public float AlphaSelf
 		{
 			get
@@ -22,8 +25,14 @@ namespace NestedFadeGroup
 			}
 		}
 
+		/// <summary>
+		/// The total alpha value of this object after applying all parent group alphas.
+		/// </summary>
 		public float AlphaTotal { get; private set; }
 
+		/// <summary>
+		/// The parent group that this group gets it's alpha from. Will be null if top level group.
+		/// </summary>
 		public NestedFadeGroup ParentGroup { get; private set; }
 
 		private void OnValidate()

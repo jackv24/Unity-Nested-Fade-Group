@@ -18,10 +18,21 @@ namespace NestedFadeGroup
 				AlphaChanged(AlphaTotal);
 		}
 
+		protected override void Awake()
+		{
+			AddMissingBridgeComponents();
+
+			base.Awake();
+		}
+
+		private void OnTransformChildrenChanged()
+		{
+			AddMissingBridgeComponents();
+		}
+
 		/// <summary>
 		/// Adds corresponding bridge components for any existing components on children GameObjects.
 		/// </summary>
-		[ContextMenu("Add Missing Bridge Components")]
 		public void AddMissingBridgeComponents()
 		{
 			// SpriteRenderer can not be inherited from, so an additional component must be used instead.

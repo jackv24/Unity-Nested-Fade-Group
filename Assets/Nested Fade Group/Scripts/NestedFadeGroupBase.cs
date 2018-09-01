@@ -41,7 +41,7 @@ namespace NestedFadeGroup
 			AlphaSelf = alpha;
 		}
 
-		private void Awake()
+		protected virtual void Awake()
 		{
 			// Updates self when script starts, also handle case where component is added to parent of existing children
 			NestedFadeGroupBase[] fadeGroupBases = GetComponentsInChildren<NestedFadeGroupBase>();

@@ -220,5 +220,33 @@ namespace NestedFadeGroup
 
 			CleanupTestHeirarchy();
 		}
+
+		[Test]
+		public void AutoAddsBridgeSpriteRendererWhenFadeGroupAddedToParent()
+		{
+			GameObject root = new GameObject("Root");
+			GameObject sprite = new GameObject("Sprite", typeof(SpriteRenderer));
+
+			sprite.transform.SetParent(root.transform);
+
+			root.AddComponent<NestedFadeGroup>();
+
+			Debug.Assert(sprite.GetComponent<NestedFadeGroupSpriteRenderer>());
+
+			Object.DestroyImmediate(root);
+		}
+
+		[Test]
+		public void AutoAddsBridgeSpriteRendererWhenParentedToFadeGroup()
+		{
+			GameObject root = new GameObject("Root", typeof(NestedFadeGroup));
+			GameObject sprite = new GameObject("Sprite", typeof(SpriteRenderer));
+
+			sprite.transform.SetParent(root.transform);
+
+			Debug.Assert(sprite.GetComponent<NestedFadeGroupSpriteRenderer>());
+
+			Object.DestroyImmediate(root);
+		}
 	}
 }

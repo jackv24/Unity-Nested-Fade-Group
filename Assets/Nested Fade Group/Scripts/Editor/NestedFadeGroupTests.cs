@@ -38,9 +38,9 @@ namespace NestedFadeGroup
 			parent1.AlphaSelf = 0.5f;
 			parent1Child1.AlphaSelf = 0.5f;
 
-			Debug.Assert(root.AlphaTotal == 0.5f);
-			Debug.Assert(parent1.AlphaTotal == 0.25f);
-			Debug.Assert(parent1Child1.AlphaTotal == 0.125f);
+			Assert.AreEqual(0.5f, root.AlphaTotal);
+			Assert.AreEqual(0.25f, parent1.AlphaTotal);
+			Assert.AreEqual(0.125f, parent1Child1.AlphaTotal);
 
 			CleanupTestHeirarchy();
 		}
@@ -54,21 +54,21 @@ namespace NestedFadeGroup
 			parent1.AlphaSelf = 1.0f;
 			parent1Child1.AlphaSelf = 1.0f;
 
-			Debug.Assert(root.AlphaTotal == 1.0f);
-			Debug.Assert(parent1.AlphaTotal == 1.0f);
-			Debug.Assert(parent1Child1.AlphaTotal == 1.0f);
+			Assert.AreEqual(1.0f, root.AlphaTotal);
+			Assert.AreEqual(1.0f, parent1.AlphaTotal);
+			Assert.AreEqual(1.0f, parent1Child1.AlphaTotal);
 
 			root.AlphaSelf = 0.5f;
 
-			Debug.Assert(root.AlphaTotal == 0.5f);
-			Debug.Assert(parent1.AlphaTotal == 0.5f);
-			Debug.Assert(parent1Child1.AlphaTotal == 0.5f);
+			Assert.AreEqual(0.5f, root.AlphaTotal);
+			Assert.AreEqual(0.5f, parent1.AlphaTotal);
+			Assert.AreEqual(0.5f, parent1Child1.AlphaTotal);
 
 			parent1.AlphaSelf = 0.25f;
 
-			Debug.Assert(root.AlphaTotal == 0.5f);
-			Debug.Assert(parent1.AlphaTotal == 0.125f);
-			Debug.Assert(parent1Child1.AlphaTotal == 0.125f);
+			Assert.AreEqual(0.5f, root.AlphaTotal);
+			Assert.AreEqual(0.125f, parent1.AlphaTotal);
+			Assert.AreEqual(0.125f, parent1Child1.AlphaTotal);
 
 			CleanupTestHeirarchy();
 		}
@@ -78,9 +78,9 @@ namespace NestedFadeGroup
 		{
 			SetupTestHeirarchy();
 
-			Debug.Assert(root.ParentGroup == null);
-			Debug.Assert(parent1.ParentGroup == root);
-			Debug.Assert(parent1Child1.ParentGroup == parent1);
+			Assert.IsNull(root.ParentGroup);
+			Assert.AreSame(root, parent1.ParentGroup);
+			Assert.AreSame(parent1, parent1Child1.ParentGroup);
 
 			CleanupTestHeirarchy();
 		}
@@ -99,7 +99,7 @@ namespace NestedFadeGroup
 
 			emptyParent.SetParent(group2.transform);
 
-			Debug.Assert(group1.ParentGroup == group2);
+			Assert.AreSame(group2, group1.ParentGroup);
 		}
 
 		[Test]
@@ -113,7 +113,7 @@ namespace NestedFadeGroup
 
 			parent1Child1.transform.SetParent(root.transform);
 
-			Debug.Assert(parent1Child1.AlphaTotal == 0.25f);
+			Assert.AreEqual(0.25f, parent1Child1.AlphaTotal);
 
 			CleanupTestHeirarchy();
 		}
@@ -130,7 +130,7 @@ namespace NestedFadeGroup
 
 			var emptyParentAddedGroup = emptyParent.gameObject.AddComponent<NestedFadeGroup>();
 
-			Debug.Assert(group1.ParentGroup == emptyParentAddedGroup);
+			Assert.AreSame(emptyParentAddedGroup, group1.ParentGroup);
 		}
 
 		[Test]
@@ -147,7 +147,7 @@ namespace NestedFadeGroup
 
 			var emptyParentAddedGroup = emptyParent.gameObject.AddComponent<NestedFadeGroup>();
 
-			Debug.Assert(emptyParentAddedGroup.AlphaTotal == 0.5f);
+			Assert.AreEqual(0.5f, emptyParentAddedGroup.AlphaTotal);
 		}
 
 		[Test]
@@ -162,7 +162,7 @@ namespace NestedFadeGroup
 
 			var emptyParentAddedGroup = emptyParent.gameObject.AddComponent<NestedFadeGroup>();
 
-			Debug.Assert(emptyParentAddedGroup.ParentGroup == root);
+			Assert.AreSame(root, emptyParentAddedGroup.ParentGroup);
 		}
 
 		[Test]
@@ -178,7 +178,7 @@ namespace NestedFadeGroup
 			parent1.AlphaSelf = 0.5f;
 			parent1.gameObject.SetActive(true);
 
-			Debug.Assert(parent1Child1.AlphaTotal == 0.5f);
+			Assert.AreEqual(0.5f, parent1Child1.AlphaTotal);
 
 			CleanupTestHeirarchy();
 		}
@@ -193,7 +193,7 @@ namespace NestedFadeGroup
 			spriteRenderer.color = new Color(1.0f, 1.0f, 1.0f, 1.0f);
 			spriteRendererBridge.AlphaSelf = 0.5f;
 
-			Debug.Assert(spriteRenderer.color == new Color(1.0f, 1.0f, 1.0f, 0.5f));
+			Assert.AreEqual(new Color(1.0f, 1.0f, 1.0f, 0.5f), spriteRenderer.color);
 			Object.DestroyImmediate(spriteObj);
 		}
 
@@ -215,38 +215,124 @@ namespace NestedFadeGroup
 			spriteRenderer.color = new Color(1.0f, 1.0f, 1.0f, 1.0f);
 			spriteRendererBridge.AlphaSelf = 0.5f;
 
-			Debug.Assert(spriteRenderer.color == new Color(1.0f, 1.0f, 1.0f, 0.0625f));
+			Assert.AreEqual(new Color(1.0f, 1.0f, 1.0f, 0.0625f), spriteRenderer.color);
 			Object.DestroyImmediate(spriteObj);
 
 			CleanupTestHeirarchy();
 		}
 
-		[Test]
-		public void AutoAddsBridgeSpriteRendererWhenFadeGroupAddedToParent()
+		private void AutoAddsBridgingComponentsWhenAddedToExistingGroup<T, U>()
+			where T : Component
+			where U : NestedFadeGroupBase
+		{
+			GameObject root = new GameObject("Root", typeof(NestedFadeGroup));
+			GameObject child = new GameObject("Child", typeof(T));
+
+			child.transform.SetParent(root.transform);
+
+			Assert.IsNotNull(child.GetComponent<U>());
+
+			Object.DestroyImmediate(root.gameObject);
+		}
+
+		private void AutoAddsBridgingComponentsWhenGroupAddedToExistingParent<T, U>()
+			where T : Component
+			where U : NestedFadeGroupBase
 		{
 			GameObject root = new GameObject("Root");
-			GameObject sprite = new GameObject("Sprite", typeof(SpriteRenderer));
+			GameObject child = new GameObject("Child", typeof(T));
 
-			sprite.transform.SetParent(root.transform);
+			child.transform.SetParent(root.transform);
 
 			root.AddComponent<NestedFadeGroup>();
 
-			Debug.Assert(sprite.GetComponent<NestedFadeGroupSpriteRenderer>());
+			Assert.IsNotNull(child.GetComponent<U>());
 
-			Object.DestroyImmediate(root);
+			Object.DestroyImmediate(root.gameObject);
 		}
 
 		[Test]
-		public void AutoAddsBridgeSpriteRendererWhenParentedToFadeGroup()
+		public void AutoAddsBridgingComponentsSpriteRendererWhenAddedToExistingGroup()
 		{
-			GameObject root = new GameObject("Root", typeof(NestedFadeGroup));
-			GameObject sprite = new GameObject("Sprite", typeof(SpriteRenderer));
+			AutoAddsBridgingComponentsWhenAddedToExistingGroup<SpriteRenderer, NestedFadeGroupSpriteRenderer>();
+		}
 
-			sprite.transform.SetParent(root.transform);
+		[Test]
+		public void AutoAddsBridgingComponentsSpriteRendererWhenGroupAddedToExistingParent()
+		{
+			AutoAddsBridgingComponentsWhenGroupAddedToExistingParent<SpriteRenderer, NestedFadeGroupSpriteRenderer>();
+		}
 
-			Debug.Assert(sprite.GetComponent<NestedFadeGroupSpriteRenderer>());
+		[Test]
+		public void ReparentsWhenMiddleParentIsDestroyed()
+		{
+			SetupTestHeirarchy();
+			Object.DestroyImmediate(parent1);
 
-			Object.DestroyImmediate(root);
+			Assert.AreSame(root, parent1Child1.ParentGroup);
+
+			CleanupTestHeirarchy();
+		}
+
+		[Test]
+		public void ReparentsWhenMiddleParentIsDisabled()
+		{
+			SetupTestHeirarchy();
+			parent1.enabled = false;
+
+			Assert.AreSame(root, parent1Child1.ParentGroup);
+
+			CleanupTestHeirarchy();
+		}
+
+		[Test]
+		public void ReparentsWhenMiddleParentIsEnabled()
+		{
+			SetupTestHeirarchy();
+			parent1.enabled = false;
+			parent1.enabled = true;
+
+			Assert.AreSame(parent1, parent1Child1.ParentGroup);
+
+			CleanupTestHeirarchy();
+		}
+
+		[Test]
+		public void UpdatesAlphaWhenParentDisabled()
+		{
+			SetupTestHeirarchy();
+			root.AlphaSelf = 0.5f;
+			root.enabled = false;
+
+			Assert.AreEqual(1.0f, parent1.AlphaTotal);
+
+			CleanupTestHeirarchy();
+		}
+
+		[Test]
+		public void UpdatesAlphaWhenParentEnabled()
+		{
+			SetupTestHeirarchy();
+			root.AlphaSelf = 0.5f;
+			root.enabled = false;
+			root.enabled = true;
+
+			Assert.AreEqual(0.5f, parent1.AlphaTotal);
+
+			CleanupTestHeirarchy();
+		}
+
+		[Test]
+		public void SkipsDisabledFadeGroupsWhenFindingParent()
+		{
+			SetupTestHeirarchy();
+			root.enabled = false;
+			parent1.enabled = false;
+			root.enabled = true;
+
+			Assert.AreEqual(root, parent1Child1.ParentGroup);
+
+			CleanupTestHeirarchy();
 		}
 	}
 }

@@ -1,133 +1,209 @@
-﻿using UnityEngine;
+using UnityEngine;
 
 namespace NestedFadeGroup
 {
-	[ExecuteInEditMode]
-	public abstract class NestedFadeGroupBase : MonoBehaviour
-	{
-		[SerializeField]
-		[Range(0, 1.0f)]
-		private float alpha = 1.0f;
-		private float previousAlpha;
+    [ExecuteInEditMode]
+    public abstract class NestedFadeGroupBase : MonoBehaviour
+    {
+        [SerializeField, Range(0, 1.0f)]
+        private float alpha = 1.0f;
+        private float? previousAlpha;
 
-		/// <summary>
-		/// The alpha of this fade object, not multiplied with parents.
-		/// </summary>
-		public float AlphaSelf
-		{
-			get
-			{
-				return alpha;
-			}
-			set
-			{
-				alpha = value;
-				UpdateAlpha(ParentGroup ? ParentGroup.AlphaTotal : 1.0f);
-			}
-		}
+        [SerializeField]
+        private bool exclude;
+        private bool? previousExclude;
 
-		/// <summary>
-		/// The total alpha value of this object after applying all parent group alphas.
-		/// </summary>
-		public float AlphaTotal { get; private set; }
+        /// <summary>
+        /// The alpha of this fade object, not multiplied with parents.
+        /// </summary>
+        public float AlphaSelf
+        {
+            get
+            {
+                return alpha;
+            }
+            set
+            {
+                alpha = value;
+                RefreshAlpha();
+            }
+        }
 
-		/// <summary>
-		/// The parent group that this group gets it's alpha from. Will be null if top level group.
-		/// </summary>
-		public NestedFadeGroup ParentGroup { get; private set; }
+        protected virtual float ExtraAlpha
+        {
+            get
+            {
+                return 1.0f;
+            }
+        }
 
-		protected virtual void LateUpdate()
-		{
-			// Keep value updated when edited through inspector or animation
-			if (alpha != previousAlpha)
-			{
-				previousAlpha = alpha;
-				AlphaSelf = alpha;
-			}
-		}
+        public bool Exclude
+        {
+            get
+            {
+                return exclude;
+            }
+            set
+            {
+                exclude = value;
 
-		protected virtual void OnEnable()
-		{
-			// Updates self when script starts, also handle case where component is added to parent of existing children
-			NestedFadeGroupBase[] fadeGroupBases = GetComponentsInChildren<NestedFadeGroupBase>();
-			foreach (var groupBase in fadeGroupBases)
-				groupBase.UpdateParent();
-		}
+                // Updates alpha with new exclude value
+                AlphaSelf = alpha;
+            }
+        }
 
-		protected virtual void OnTransformParentChanged()
-		{
-			UpdateParent();
-		}
+        /// <summary>
+        /// The total alpha value of this object after applying all parent group alphas.
+        /// </summary>
+        public float AlphaTotal
+        {
+            get;
+            private set;
+        }
 
-		protected virtual void OnDisable()
-		{
-			UnsubscribeFromParent();
-		}
+        /// <summary>
+        /// The parent group that this group gets it's alpha from. Will be null if top level group.
+        /// </summary>
+        public NestedFadeGroup ParentGroup
+        {
+            get;
+            private set;
+        }
 
-		private void UpdateParent()
-		{
-			UnsubscribeFromParent();
-			ParentGroup = GetParentRecursively(transform.parent);
-			SubscribeToParent();
+        // Use static variable for this so it can be set before component is added
+        public static bool QueuedOnComponentAdded
+        {
+            get;
+            protected set;
+        }
 
-			// Trigger alpha change logic when reparented
-			AlphaSelf = alpha;
-		}
+        protected virtual void OnEnable()
+        {
+            previousAlpha = null;
 
-		private NestedFadeGroup GetParentRecursively(Transform parent)
-		{
-			if (parent == null)
-				return null;
+            UpdateParent();
+        }
 
-			// Get components in parents, skipping any that are disabled
-			var group = parent.GetComponent<NestedFadeGroup>();
-			if (group != null && group.enabled)
-				return group;
-			else if (parent.parent)
-				return GetParentRecursively(parent.parent);
-			else
-				return null;
-		}
+        protected virtual void OnDisable()
+        {
+            UnsubscribeFromParent();
+        }
 
-		private void SetParent(NestedFadeGroup parentGroup)
-		{
-			UnsubscribeFromParent();
-			ParentGroup = parentGroup;
-			SubscribeToParent();
+        protected virtual void LateUpdate()
+        {
+            // Keep values updated when edited through inspector or animation
+            if (previousAlpha == null || alpha != previousAlpha)
+            {
+                previousAlpha = alpha;
+                AlphaSelf = alpha;
+            }
+            if (previousExclude == null || exclude != previousExclude)
+            {
+                previousExclude = exclude;
+                Exclude = exclude;
+            }
+        }
 
-			// Trigger alpha change logic when reparented
-			AlphaSelf = alpha;
-		}
+        protected virtual void OnTransformParentChanged()
+        {
+            UpdateParent();
+        }
 
-		private void SubscribeToParent()
-		{
-			if (ParentGroup)
-			{
-				ParentGroup.AlphaChanged += UpdateAlpha;
-				ParentGroup.Reparent += SetParent;
-			}
-		}
+        public void UpdateParent()
+        {
+            if (!enabled)
+                return;
 
-		private void UnsubscribeFromParent()
-		{
-			if (ParentGroup)
-			{
-				ParentGroup.AlphaChanged -= UpdateAlpha;
-				ParentGroup.Reparent -= SetParent;
-			}
-		}
+            UnsubscribeFromParent();
+            ParentGroup = GetParentRecursively(transform);
+            SubscribeToParent();
 
-		private void UpdateAlpha(float parentAlpha)
-		{
-			GetMissingReferences();
+            // Trigger alpha change logic when reparented
+            AlphaSelf = alpha;
+        }
 
-			AlphaTotal = alpha * parentAlpha;
+        private NestedFadeGroup GetParentRecursively(Transform transform)
+        {
+            if (transform == null)
+                return null;
 
-			OnAlphaChanged(AlphaTotal);
-		}
+            // Get components in parents, skipping any that are disabled
+            // Also don't get self (bridging component can be on same object as group)
+            var group = transform.GetComponent<NestedFadeGroup>();
+            if (group != null && group.enabled && group != this)
+                return group;
+            else if (transform.parent)
+                return GetParentRecursively(transform.parent);
+            else
+                return null;
+        }
 
-		protected virtual void GetMissingReferences() { }
+        private void SetParent(NestedFadeGroup parentGroup)
+        {
+            UnsubscribeFromParent();
+            ParentGroup = parentGroup;
+            SubscribeToParent();
 
-		protected abstract void OnAlphaChanged(float alpha);
-	}
+            // Trigger alpha change logic when reparented
+            AlphaSelf = alpha;
+        }
+
+        private void SubscribeToParent()
+        {
+            if (ParentGroup)
+            {
+                ParentGroup.AlphaChanged += UpdateAlpha;
+                ParentGroup.Reparent += SetParent;
+            }
+        }
+
+        private void UnsubscribeFromParent()
+        {
+            if (ParentGroup)
+            {
+                ParentGroup.AlphaChanged -= UpdateAlpha;
+                ParentGroup.Reparent -= SetParent;
+            }
+        }
+
+        protected void RefreshAlpha()
+        {
+            UpdateAlpha(ParentGroup ? ParentGroup.AlphaTotal : 1.0f);
+        }
+
+        private void UpdateAlpha(float parentAlpha)
+        {
+            // Function can still be subscribed to event when underlying native object has been destroyed
+            if (this == null)
+            {
+                //Debug.LogError("NestedFadeGroupBase Object missing!");
+                return;
+            }
+
+            GetMissingReferences();
+
+            // While adding component values need to be updated first
+            if (QueuedOnComponentAdded)
+            {
+                QueuedOnComponentAdded = false;
+
+                // Will probably call UpdateAlpha again but that's fine
+                OnComponentAdded();
+            }
+
+            if (exclude)
+                AlphaTotal = alpha;
+            else
+                AlphaTotal = alpha * parentAlpha;
+
+            AlphaTotal *= ExtraAlpha;
+
+            OnAlphaChanged(AlphaTotal);
+        }
+
+        protected virtual void GetMissingReferences() { }
+        protected virtual void OnComponentAdded() { }
+
+        protected abstract void OnAlphaChanged(float alpha);
+    }
 }

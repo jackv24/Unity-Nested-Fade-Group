@@ -1,66 +1,96 @@
-﻿using UnityEngine;
+using UnityEngine;
 
 namespace NestedFadeGroup
 {
-	[ExecuteInEditMode]
-	[RequireComponent(typeof(SpriteRenderer))]
-	[NestedFadeGroupBridge(typeof(SpriteRenderer))]
-	public class NestedFadeGroupSpriteRenderer : NestedFadeGroupBase
-	{
-		private SpriteRenderer spriteRenderer;
+    [ExecuteInEditMode]
+    [RequireComponent(typeof(SpriteRenderer))]
+    [NestedFadeGroupBridge(typeof(SpriteRenderer))]
+    public class NestedFadeGroupSpriteRenderer : NestedFadeGroupBase
+    {
+        private SpriteRenderer spriteRenderer;
 
-		public Color Color
-		{
-			get
-			{
-				return spriteRenderer.color;
-			}
-			set
-			{
-				AlphaSelf = value.a;
+        public Color Color
+        {
+            get
+            {
+                GetMissingReferences();
 
-				if (spriteRenderer)
-					spriteRenderer.color = new Color(value.r, value.g, value.b, AlphaTotal);
-			}
-		}
+                return spriteRenderer.color;
+            }
+            set
+            {
+                GetMissingReferences();
 
-		public Sprite Sprite
-		{
-			get
-			{
-				return spriteRenderer.sprite;
-			}
-			set
-			{
-				spriteRenderer.sprite = value;
-			}
-		}
+                AlphaSelf = value.a;
+                BaseColor = value;
+            }
+        }
 
-		protected override void GetMissingReferences()
-		{
-			if (!spriteRenderer)
-				spriteRenderer = GetComponent<SpriteRenderer>();
-		}
+        public Color BaseColor
+        {
+            get
+            {
+                GetMissingReferences();
 
-		protected override void OnAlphaChanged(float alpha)
-		{
-			Color color = spriteRenderer.color;
-			color.a = alpha;
-			spriteRenderer.color = color;
-		}
+                var color = spriteRenderer.color;
+                color.a = 1.0f;
 
-		protected override void LateUpdate()
-		{
-			base.LateUpdate();
+                return color;
+            }
+            set
+            {
+                if (spriteRenderer)
+                    spriteRenderer.color = new Color(value.r, value.g, value.b, AlphaTotal);
+            }
+        }
 
-			// Ensure alpha is correct when something else changes sprite renderer color directly
-			float alpha = AlphaTotal;
-			Color color = spriteRenderer.color;
-			if (color.a != alpha)
-			{
-				color.a = alpha;
-				spriteRenderer.color = color;
-			}
-		}
-	}
+        public Sprite Sprite
+        {
+            get
+            {
+                GetMissingReferences();
+
+                return spriteRenderer.sprite;
+            }
+            set
+            {
+                GetMissingReferences();
+
+                spriteRenderer.sprite = value;
+            }
+        }
+
+        protected override void GetMissingReferences()
+        {
+            if (!spriteRenderer)
+                spriteRenderer = GetComponent<SpriteRenderer>();
+        }
+
+        protected override void OnComponentAdded()
+        {
+            if (spriteRenderer)
+                AlphaSelf = spriteRenderer.color.a;
+        }
+
+        protected override void OnAlphaChanged(float alpha)
+        {
+            Color color = spriteRenderer.color;
+            color.a = alpha;
+            spriteRenderer.color = color;
+        }
+
+        protected override void LateUpdate()
+        {
+            base.LateUpdate();
+
+            // Ensure alpha is correct when something else changes sprite renderer color directly
+            float alpha = AlphaTotal;
+            Color color = spriteRenderer.color;
+            if (color.a != alpha)
+            {
+                color.a = alpha;
+                spriteRenderer.color = color;
+            }
+        }
+    }
 }

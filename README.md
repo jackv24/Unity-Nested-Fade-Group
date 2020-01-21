@@ -12,6 +12,3 @@ public class NestedFadeGroupSpriteRenderer : NestedFadeGroupBase
 {
     private SpriteRenderer spriteRenderer;
 ```
-
-## Limitations
-Currently each GameObject can only have 1 of anything that extends NestedFadeGroupBase. This means you can't have a NestedFadeGroup and NestedFadeGroupSpriteRenderer on the same GameObject, or two NestedFadeGroups (although that wouldn't really make much sense anyway).
